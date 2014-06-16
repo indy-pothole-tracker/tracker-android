@@ -38,6 +38,7 @@ public class MainActivity extends Activity implements
     private GoogleMap mMap;
     private LocationClient mLocationClient;
     private PopulateMapTask mPopulaterTask;
+    PotholeDetectionService potholeService;
 
     public static SharedPreferences prefs;
     public static final String SHARED_PREFS_NAME = "civic_hack_potholes_prefs";
@@ -52,7 +53,7 @@ public class MainActivity extends Activity implements
         final Bitmap notificationIcon = BitmapFactory.decodeResource(getResources(), R.drawable.ic_launcher);
 
         final Context c = getBaseContext();
-        PotholeDetectionService service = new PotholeDetectionService(c, new PotholeDetectionService.OnPotholeDetectedListener() {
+        potholeService = new PotholeDetectionService(c, new PotholeDetectionService.OnPotholeDetectedListener() {
             public void onPotholeDetected() {
                 Toast.makeText(getApplicationContext(), "Pothole detected.", Toast.LENGTH_SHORT).show();
                 Log.d("civic-pothole-detection", "Pothole detected");
@@ -70,7 +71,6 @@ public class MainActivity extends Activity implements
                 new AddPotholeTask(mLocationClient.getLastLocation().getLatitude(), mLocationClient.getLastLocation().getLongitude()).execute();
             }
         });
-        service.start();
 
         mMap = ((MapFragment) getFragmentManager().findFragmentById(R.id.mapView)).getMap();
         mMap.setMyLocationEnabled(true);
@@ -198,6 +198,10 @@ public class MainActivity extends Activity implements
             case R.id.detect_toggle:
                 item.setChecked(!item.isChecked());
                 prefs.edit().putBoolean(PREF_ENABLE_POTHOLE_DETECTION, item.isChecked()).commit();
+                if (item.isChecked()) {
+                    potholeService.start();
+                }
+
                 return true;
             default:
                 return super.onOptionsItemSelected(item);

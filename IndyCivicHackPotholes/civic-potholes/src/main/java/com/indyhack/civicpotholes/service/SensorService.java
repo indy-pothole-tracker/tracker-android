@@ -25,7 +25,6 @@ public class SensorService implements SensorEventListener {
     }
 
     public double getLinearZAcceleration() {
-        //Log.d("civic-pothole-detection", "" + currentZ);
         return currentZ;
     }
 
@@ -45,4 +44,5 @@ public class SensorService implements SensorEventListener {
     public void onAccuracyChanged(Sensor sensor, int accuracy) {
         this.accuracy = accuracy;
     }
+
 }

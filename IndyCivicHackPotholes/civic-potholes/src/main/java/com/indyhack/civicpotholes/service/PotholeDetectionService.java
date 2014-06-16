@@ -48,44 +48,36 @@ public class PotholeDetectionService {
     
     public void start() {
 
+        final SharedPreferences prefs = c.getSharedPreferences(MainActivity.SHARED_PREFS_NAME, 0);
         final SensorService service = new SensorService(c);
+
         new Thread(new Runnable() {
             public void run() {
                 while (true) {
+
+                    // Check the preferences to see if we need to stop
+                    boolean isEnabled = prefs.getBoolean(MainActivity.PREF_ENABLE_POTHOLE_DETECTION, true);
+                    if (!isEnabled) {
+                        return;
+                    }
 
                     // Update the data with a new reading
                     double z = service.getLinearZAcceleration();
                     addLinearAccelerationValue(z);
 
-                    // Wait a bit of time
-                    try {
-                        Thread.sleep(5);
-                    } catch (InterruptedException e) {
-                    }
-
                     analyzeData();
 
-                    while (!run) { try { Thread.sleep(1000); } catch (InterruptedException e) {} }
+                    // Wait a bit of time
+                    try { Thread.sleep(5); } catch (InterruptedException e) {}
 
                 }
             }
         }).start();
+    }
 
-        new Thread(new Runnable() {
-            public void run() {
-                while (true) {
-                    SharedPreferences prefs = c.getSharedPreferences(MainActivity.SHARED_PREFS_NAME, 0);
-                    boolean isEnabled = prefs.getBoolean(MainActivity.PREF_ENABLE_POTHOLE_DETECTION, true);
-                    if (isEnabled) {
-                        run = true;
-                    } else {
-                        run = false;
-                    }
-
-                    try { Thread.sleep(1000); } catch (InterruptedException e) {}
-                }
-            }
-        }).start();
+    public void stop() {
+        SharedPreferences prefs = c.getSharedPreferences(MainActivity.SHARED_PREFS_NAME, 0);
+        prefs.edit().putBoolean(MainActivity.PREF_ENABLE_POTHOLE_DETECTION, false).commit();
     }
 
     private boolean analyzeData() {
