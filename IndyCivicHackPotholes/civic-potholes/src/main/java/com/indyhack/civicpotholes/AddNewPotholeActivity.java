@@ -3,22 +3,18 @@ package com.indyhack.civicpotholes;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.IntentSender;
-import android.location.Geocoder;
 import android.location.Address;
+import android.location.Geocoder;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.EditText;
-import android.widget.Toast;
 
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GooglePlayServicesClient;
 import com.google.android.gms.location.LocationClient;
-import com.google.android.gms.maps.CameraUpdateFactory;
-import com.google.android.gms.maps.GoogleMap;
-import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.LatLng;
 import com.indyhack.civicpotholes.task.AddPotholeTask;
 
@@ -27,7 +23,7 @@ import java.util.List;
 import java.util.Locale;
 
 
-public class AddNewPothole extends Activity implements
+public class AddNewPotholeActivity extends Activity implements
         GooglePlayServicesClient.ConnectionCallbacks,
         GooglePlayServicesClient.OnConnectionFailedListener {
 

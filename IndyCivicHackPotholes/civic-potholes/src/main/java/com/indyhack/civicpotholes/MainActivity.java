@@ -22,7 +22,6 @@ import com.google.android.gms.location.LocationClient;
 import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.MapFragment;
-import com.google.android.gms.maps.model.BitmapDescriptorFactory;
 import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.LatLng;
 import com.indyhack.civicpotholes.service.PotholeDetectionService;
@@ -193,7 +192,7 @@ public class MainActivity extends Activity implements
             case R.id.action_settings:
                 return true;
             case R.id.action_new:
-                Intent intent = new Intent(this, AddNewPothole.class);
+                Intent intent = new Intent(this, AddNewPotholeActivity.class);
                 startActivity(intent);
                 return true;
             case R.id.detect_toggle:
