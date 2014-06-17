@@ -3,14 +3,15 @@ package com.indyhack.civicpotholes;
 import android.app.Activity;
 import android.app.AlertDialog;
 import android.content.IntentSender;
-import android.location.Address;
-import android.location.Geocoder;
+import android.net.Uri;
+import android.os.AsyncTask;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
 import android.widget.EditText;
+import android.widget.Toast;
 
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GooglePlayServicesClient;
@@ -18,14 +19,23 @@ import com.google.android.gms.location.LocationClient;
 import com.google.android.gms.maps.model.LatLng;
 import com.indyhack.civicpotholes.task.AddPotholeTask;
 
+import org.apache.http.HttpResponse;
+import org.apache.http.client.HttpClient;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.impl.client.DefaultHttpClient;
+import org.json.JSONException;
+import org.json.JSONObject;
+
+import java.io.BufferedReader;
 import java.io.IOException;
-import java.util.List;
-import java.util.Locale;
+import java.io.InputStream;
+import java.io.InputStreamReader;
 
 
 public class AddNewPotholeActivity extends Activity implements
         GooglePlayServicesClient.ConnectionCallbacks,
-        GooglePlayServicesClient.OnConnectionFailedListener {
+        GooglePlayServicesClient.OnConnectionFailedListener,
+        AsyncCallback<LatLng> {
 
     private final static int CONNECTION_FAILURE_RESOLUTION_REQUEST = 9000;
 
@@ -39,9 +49,7 @@ public class AddNewPotholeActivity extends Activity implements
 
         address = (EditText) findViewById(R.id.address);
         mLocationClient = new LocationClient(this, this, this);
-
     }
-
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -111,18 +119,90 @@ public class AddNewPotholeActivity extends Activity implements
         }
     }
 
-    private LatLng convertAddrToLatLng(String addr) {
-        Geocoder geoCoder = new Geocoder(getApplicationContext(), Locale.getDefault());
-        try {
-            List<Address> address = geoCoder.getFromLocationName(addr, 1);
-            double latitude = address.get(0).getLatitude();
-            double longitude = address.get(0).getLongitude();
+    private void convertAddrToLatLng(final String addr, final AsyncCallback callback) {
 
-            return new LatLng(latitude, longitude);
-        } catch (IOException e) {
-            e.printStackTrace();
-            return null;
-        }
+
+        new AsyncTask<String, Void, LatLng>() {
+
+            @Override
+            protected LatLng doInBackground(String... params) {
+
+
+                HttpClient client = new DefaultHttpClient();
+
+
+                String url = "https://maps.googleapis.com/maps/api/geocode/json?key=" + getString(R.string.google_key);
+
+                Uri uri = new Uri.Builder()
+                        .scheme("https")
+                        .authority("maps.googleapis.com")
+                        .path("maps/api/geocode/json")
+                        .appendQueryParameter("key", getString(R.string.google_key))
+                        .appendQueryParameter("address", addr)
+                        .build();
+
+
+                HttpGet get = new HttpGet(uri.toString());
+
+                HttpResponse response = null;
+                InputStream stream;
+
+                try {
+                    response = client.execute(get);
+                    stream = response.getEntity().getContent();
+
+                    BufferedReader r = new BufferedReader(new InputStreamReader(stream));
+                    StringBuilder total = new StringBuilder();
+                    String line;
+                    while ((line = r.readLine()) != null) {
+                        total.append(line);
+                    }
+
+                    try {
+                        JSONObject json = new JSONObject(total.toString());
+
+                        JSONObject location = json.getJSONArray("results").getJSONObject(0).getJSONObject("geometry").getJSONObject("location");
+
+
+                        long lat = location.getLong("lat");
+                        long lng = location.getLong("lng");
+
+                        return new LatLng(lat, lng);
+                    } catch (JSONException e) {
+                        e.printStackTrace();
+                        return null;
+                    }
+
+                } catch (IOException e) {
+                    e.printStackTrace();
+                    return null;
+                }
+            }
+
+            @Override
+            protected void onPostExecute(final LatLng latLng) {
+                if(latLng != null) {
+                    callback.onResult(latLng);
+                }
+                else {
+                    callback.onFail();
+                }
+
+            }
+        }.execute();
+
+//        Geocoder geoCoder = new Geocoder(getApplicationContext(), Locale.getDefault());
+//        try {
+//            List<Address> address = geoCoder.getFromLocationName(addr, 1);
+//            double latitude = address.get(0).getLatitude();
+//            double longitude = address.get(0).getLongitude();
+//
+//            return new LatLng(latitude, longitude);
+//        } catch (IOException e) {
+//            e.printStackTrace();
+//            return null;
+//        }
+
     }
 
     public void addPothole(View v) {
@@ -140,7 +220,7 @@ public class AddNewPotholeActivity extends Activity implements
         switch (item.getItemId()) {
             case R.id.action_accept:
                 Log.i("Address", address.getText().toString());
-                uploadPothole(convertAddrToLatLng(address.getText().toString()));
+                convertAddrToLatLng(address.getText().toString(), this);
                 return true;
             case R.id.action_settings:
                 return true;
@@ -149,4 +229,14 @@ public class AddNewPotholeActivity extends Activity implements
         }
     }
 
+    @Override
+    public void onResult(LatLng result) {
+        uploadPothole(result);
+        Toast.makeText(this, "Reported @ " + result.latitude + ", " + result.longitude, Toast.LENGTH_SHORT);
+    }
+
+    @Override
+    public void onFail() {
+        Toast.makeText(this, "Failed to get LatLng", Toast.LENGTH_SHORT);
+    }
 }
