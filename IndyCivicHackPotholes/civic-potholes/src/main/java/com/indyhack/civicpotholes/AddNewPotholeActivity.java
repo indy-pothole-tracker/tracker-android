@@ -16,6 +16,8 @@ import android.widget.Toast;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GooglePlayServicesClient;
 import com.google.android.gms.location.LocationClient;
+import com.google.android.gms.maps.GoogleMap;
+import com.google.android.gms.maps.MapFragment;
 import com.google.android.gms.maps.model.LatLng;
 import com.indyhack.civicpotholes.task.AddPotholeTask;
 
@@ -42,6 +44,9 @@ public class AddNewPotholeActivity extends Activity implements
     EditText address;
     LocationClient mLocationClient;
 
+    private GoogleMap mMap;
+
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
@@ -49,6 +54,19 @@ public class AddNewPotholeActivity extends Activity implements
 
         address = (EditText) findViewById(R.id.address);
         mLocationClient = new LocationClient(this, this, this);
+
+
+        mMap = ((MapFragment) getFragmentManager().findFragmentById(R.id.mapView)).getMap();
+        mMap.setMyLocationEnabled(true);
+
+
+        mMap.setOnMapLongClickListener(new GoogleMap.OnMapLongClickListener() {
+            @Override
+            public void onMapLongClick(LatLng latLng) {
+                uploadPothole(latLng);
+                finish();
+            }
+        });
     }
 
     @Override
@@ -232,11 +250,12 @@ public class AddNewPotholeActivity extends Activity implements
     @Override
     public void onResult(LatLng result) {
         uploadPothole(result);
-        Toast.makeText(this, "Reported @ " + result.latitude + ", " + result.longitude, Toast.LENGTH_SHORT);
+        Toast.makeText(this, "Reported @ " + result.latitude + ", " + result.longitude, Toast.LENGTH_SHORT).show();
+        finish();
     }
 
     @Override
     public void onFail() {
-        Toast.makeText(this, "Failed to get LatLng", Toast.LENGTH_SHORT);
+        Toast.makeText(this, "Failed to get LatLng", Toast.LENGTH_SHORT).show();
     }
 }
