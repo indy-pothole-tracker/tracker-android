@@ -16,9 +16,12 @@ import android.widget.Toast;
 import com.google.android.gms.common.ConnectionResult;
 import com.google.android.gms.common.GooglePlayServicesClient;
 import com.google.android.gms.location.LocationClient;
+import com.google.android.gms.maps.CameraUpdateFactory;
 import com.google.android.gms.maps.GoogleMap;
 import com.google.android.gms.maps.MapFragment;
+import com.google.android.gms.maps.model.CameraPosition;
 import com.google.android.gms.maps.model.LatLng;
+import com.google.android.gms.maps.model.MarkerOptions;
 import com.indyhack.civicpotholes.task.AddPotholeTask;
 
 import org.apache.http.HttpResponse;
@@ -44,8 +47,9 @@ public class AddNewPotholeActivity extends Activity implements
     EditText address;
     LocationClient mLocationClient;
 
-    private GoogleMap mMap;
+    LatLng potholePosition;
 
+    private GoogleMap mMap;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -55,26 +59,54 @@ public class AddNewPotholeActivity extends Activity implements
         address = (EditText) findViewById(R.id.address);
         mLocationClient = new LocationClient(this, this, this);
 
-
         mMap = ((MapFragment) getFragmentManager().findFragmentById(R.id.mapView)).getMap();
         mMap.setMyLocationEnabled(true);
-
-
         mMap.setOnMapLongClickListener(new GoogleMap.OnMapLongClickListener() {
             @Override
             public void onMapLongClick(LatLng latLng) {
-                uploadPothole(latLng);
-                finish();
+                mMap.clear();
+                potholePosition = latLng;
+                mMap.addMarker( new MarkerOptions().position(latLng) );
+                invalidateOptionsMenu();
             }
         });
     }
 
     @Override
     public boolean onCreateOptionsMenu(Menu menu) {
-        
         // Inflate the menu; this adds items to the action bar if it is present.
         getMenuInflater().inflate(R.menu.add_new_pothole, menu);
         return true;
+    }
+
+    @Override
+    public boolean onPrepareOptionsMenu(Menu menu) {
+        MenuItem item = menu.findItem(R.id.action_accept);
+
+        item.setEnabled(potholePosition != null);
+
+        return super.onPrepareOptionsMenu(menu);
+    }
+
+    @Override
+    public void onBackPressed() {
+        if(potholePosition != null) {
+            potholePosition = null;
+            mMap.clear();
+            invalidateOptionsMenu();
+        }
+        else
+            super.onBackPressed();
+    }
+
+    @Override
+    public boolean onMenuItemSelected(int featureId, MenuItem item) {
+        if(item.getItemId() == R.id.action_accept) {
+            uploadPothole(potholePosition);
+            Toast.makeText(this, "Reported @ " + potholePosition.latitude + ", " + potholePosition.longitude, Toast.LENGTH_SHORT).show();
+            finish();
+        }
+        return super.onMenuItemSelected(featureId, item);
     }
 
     @Override
@@ -82,9 +114,22 @@ public class AddNewPotholeActivity extends Activity implements
         Log.d("MainActivity", "The mLocationHandler has been connected!");
 
         Log.v("MainActivity","Zooming camera!!!");
-        if(mLocationClient == null) {
+        if(mLocationClient == null || mMap == null) {
             return;
         }
+
+        CameraPosition.Builder cameraPositionBuilder = new CameraPosition.Builder();
+	        /*if(mLocationClient.getLastLocation() == null) {
+	            Log.e("LocationClient", "Last location is null!");
+	            mLocationClient.disconnect();
+	            return;
+	        }*/
+        cameraPositionBuilder.target(new LatLng(mLocationClient
+                .getLastLocation().getLatitude(), mLocationClient
+                .getLastLocation().getLongitude()));
+        cameraPositionBuilder.zoom((float) 12);
+        mMap.animateCamera(CameraUpdateFactory
+                .newCameraPosition(cameraPositionBuilder.build()));
     }
 
     /**
