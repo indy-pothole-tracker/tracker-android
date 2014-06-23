@@ -6,10 +6,13 @@ import android.content.IntentSender;
 import android.net.Uri;
 import android.os.AsyncTask;
 import android.os.Bundle;
+import android.text.Editable;
+import android.text.TextWatcher;
 import android.util.Log;
 import android.view.Menu;
 import android.view.MenuItem;
 import android.view.View;
+import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Toast;
 
@@ -51,13 +54,88 @@ public class AddNewPotholeActivity extends Activity implements
 
     private GoogleMap mMap;
 
+    boolean enableCheck = false;
+
+    Button useMyLocation;
+
+    View map_mask;
+
+    enum InputMethod{
+      MAP, CURRENT, ADDRESS, ALL;
+    }
+
+    private void enableInputMethod(InputMethod method)
+    {
+        if(address == null ||  map_mask == null || useMyLocation == null)
+            throw new RuntimeException("Missing requirement.");
+
+        switch(method) {
+            case ALL:
+                useMyLocation.setEnabled(true);
+                address.setEnabled(true);
+                map_mask.setVisibility(View.GONE);
+                break;
+
+            case CURRENT:
+                useMyLocation.setEnabled(true);
+                address.setEnabled(false);
+                map_mask.setVisibility(View.VISIBLE);
+                break;
+
+            case MAP:
+                useMyLocation.setEnabled(false);
+                address.setEnabled(false);
+                map_mask.setVisibility(View.GONE);
+                break;
+
+            case ADDRESS:
+                useMyLocation.setEnabled(false);
+                address.setEnabled(true);
+                map_mask.setVisibility(View.VISIBLE);
+                break;
+
+            default:
+                break;
+        }
+}
+
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.activity_add_new_pothole);
 
+        map_mask = (View) findViewById(R.id.map_mask);
+
         address = (EditText) findViewById(R.id.address);
+        address.addTextChangedListener(new TextWatcher() {
+            @Override
+            public void beforeTextChanged(CharSequence s, int start, int count, int after) {
+
+            }
+
+            @Override
+            public void onTextChanged(CharSequence s, int start, int before, int count) {
+
+            }
+
+            @Override
+            public void afterTextChanged(Editable s) {
+                if(s.length() == 0) {
+                    enableCheck = false;
+                    invalidateOptionsMenu();
+                    enableInputMethod(InputMethod.ALL);
+                }
+                else {
+                    enableCheck = true;
+                    invalidateOptionsMenu();
+                    enableInputMethod(InputMethod.ADDRESS);
+                }
+            }
+        });
+
         mLocationClient = new LocationClient(this, this, this);
+
+        useMyLocation = (Button) findViewById(R.id.myLocation);
 
         mMap = ((MapFragment) getFragmentManager().findFragmentById(R.id.mapView)).getMap();
         mMap.setMyLocationEnabled(true);
@@ -66,7 +144,9 @@ public class AddNewPotholeActivity extends Activity implements
             public void onMapLongClick(LatLng latLng) {
                 mMap.clear();
                 potholePosition = latLng;
+                enableCheck = true;
                 mMap.addMarker( new MarkerOptions().position(latLng) );
+                enableInputMethod(InputMethod.MAP);
                 invalidateOptionsMenu();
             }
         });
@@ -81,33 +161,27 @@ public class AddNewPotholeActivity extends Activity implements
 
     @Override
     public boolean onPrepareOptionsMenu(Menu menu) {
-        MenuItem item = menu.findItem(R.id.action_accept);
 
-        item.setEnabled(potholePosition != null);
+        if(!enableCheck)
+            menu.removeItem(R.id.action_accept);
 
         return super.onPrepareOptionsMenu(menu);
     }
 
     @Override
     public void onBackPressed() {
+        enableInputMethod(InputMethod.ALL);
         if(potholePosition != null) {
             potholePosition = null;
             mMap.clear();
+            enableCheck = false;
             invalidateOptionsMenu();
         }
         else
             super.onBackPressed();
     }
 
-    @Override
-    public boolean onMenuItemSelected(int featureId, MenuItem item) {
-        if(item.getItemId() == R.id.action_accept) {
-            uploadPothole(potholePosition);
-            Toast.makeText(this, "Reported @ " + potholePosition.latitude + ", " + potholePosition.longitude, Toast.LENGTH_SHORT).show();
-            finish();
-        }
-        return super.onMenuItemSelected(featureId, item);
-    }
+
 
     @Override
     public void onConnected(Bundle bun) {
@@ -200,10 +274,13 @@ public class AddNewPotholeActivity extends Activity implements
                         .scheme("https")
                         .authority("maps.googleapis.com")
                         .path("maps/api/geocode/json")
-                        .appendQueryParameter("key", getString(R.string.google_key))
-                        .appendQueryParameter("address", addr)
+                        //.appendQueryParameter("key", getString(R.string.google_key))
+                        .appendQueryParameter("address", addr.replace(' ', '+'))
+                        .appendQueryParameter("sensor", "false")
                         .build();
 
+
+                Log.i("geocode", uri.toString());
 
                 HttpGet get = new HttpGet(uri.toString());
 
@@ -212,6 +289,9 @@ public class AddNewPotholeActivity extends Activity implements
 
                 try {
                     response = client.execute(get);
+
+                    Log.i("Geocode", "Status from server: " + response.getStatusLine().getStatusCode());
+
                     stream = response.getEntity().getContent();
 
                     BufferedReader r = new BufferedReader(new InputStreamReader(stream));
@@ -223,6 +303,8 @@ public class AddNewPotholeActivity extends Activity implements
 
                     try {
                         JSONObject json = new JSONObject(total.toString());
+
+                        Log.d("Geocoding", "Status: " + json.getString("status"));
 
                         JSONObject location = json.getJSONArray("results").getJSONObject(0).getJSONObject("geometry").getJSONObject("location");
 
@@ -268,7 +350,7 @@ public class AddNewPotholeActivity extends Activity implements
 
     }
 
-    public void addPothole(View v) {
+    public void addPothole() {
         uploadPothole(new LatLng(mLocationClient.getLastLocation().getLatitude(), mLocationClient.getLastLocation().getLongitude()));
     }
 
@@ -281,10 +363,19 @@ public class AddNewPotholeActivity extends Activity implements
     public boolean onOptionsItemSelected(MenuItem item) {
         // Handle item selection
         switch (item.getItemId()) {
+
             case R.id.action_accept:
-                Log.i("Address", address.getText().toString());
-                convertAddrToLatLng(address.getText().toString(), this);
-                return true;
+                if(potholePosition != null) {
+                    uploadPothole(potholePosition);
+                    Toast.makeText(this, "Reported @ " + potholePosition.latitude + ", " + potholePosition.longitude, Toast.LENGTH_SHORT).show();
+                    finish();
+                    return true;
+                } else if (address.getText().toString().length() != 0) {
+                    Log.i("Address", address.getText().toString());
+                    convertAddrToLatLng(address.getText().toString(), this);
+                    return true;
+                }
+                return false;
             case R.id.action_settings:
                 return true;
             default:
