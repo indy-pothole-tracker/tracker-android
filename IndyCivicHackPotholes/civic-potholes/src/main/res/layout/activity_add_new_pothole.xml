@@ -27,17 +27,62 @@
         android:padding="20dp"
         android:id="@+id/or" />
 
-    <TextView
-        android:text="@string/enter_address"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_below="@id/or"
-        android:id="@+id/enter_address" />
-
     <EditText
         android:layout_width="fill_parent"
         android:layout_height="wrap_content"
+        android:inputType="textCapWords"
         android:id="@+id/address"
-        android:layout_below="@+id/enter_address" />
+        android:layout_below="@+id/or"
+        android:singleLine="true"
+        android:hint="@string/enter_address"/>
+
+    <TextView
+        android:text="@string/or"
+        android:layout_width="fill_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:textAlignment="center"
+        android:layout_below="@id/address"
+        android:textSize="25sp"
+        android:padding="20dp"
+        android:id="@+id/or2" />
+
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_below="@+id/or2"
+        android:layout_alignParentBottom="true">
+
+        <fragment xmlns:android="http://schemas.android.com/apk/res/android"
+            android:id="@+id/mapView"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:name="com.google.android.gms.maps.MapFragment"/>
+
+        <RelativeLayout
+            android:id="@+id/map_mask"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:visibility="gone" >
+
+            <View
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:background="#ccffffff" />
+
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_centerVertical="true"
+                android:layout_centerHorizontal="true"
+                android:text="Map Disabled" />
+
+        </RelativeLayout>
+
+
+    </FrameLayout>
+
+
+
 
 </RelativeLayout>
