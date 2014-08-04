@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:orientation="vertical" android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:id="@+id/toast_layout_root"
+    android:background="#ff0000">
+
+    <TextView
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:textStyle="bold"
+        android:paddingTop="100dp"
+        android:paddingBottom="100dp"
+        android:paddingLeft="40dp"
+        android:paddingRight="40dp"
+        android:textColor="@android:color/white"
+        android:textAppearance="?android:textAppearanceLarge"
+        android:text="New Pothole Detected"/>
+
+</RelativeLayout>
