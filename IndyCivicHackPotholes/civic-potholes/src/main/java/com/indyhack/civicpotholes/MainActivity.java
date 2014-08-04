@@ -12,8 +12,11 @@ import android.graphics.BitmapFactory;
 import android.os.Bundle;
 import android.support.v4.app.NotificationCompat;
 import android.util.Log;
+import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuItem;
+import android.view.View;
+import android.view.ViewGroup;
 import android.widget.Toast;
 
 import com.google.android.gms.common.ConnectionResult;
@@ -55,7 +58,16 @@ public class MainActivity extends Activity implements
         final Context c = getBaseContext();
         potholeService = new PotholeDetectionService(c, new PotholeDetectionService.OnPotholeDetectedListener() {
             public void onPotholeDetected() {
-                Toast.makeText(getApplicationContext(), "Pothole detected.", Toast.LENGTH_SHORT).show();
+
+                Toast toast = new Toast(getApplicationContext());
+                LayoutInflater inflater = getLayoutInflater();
+                View layout = inflater.inflate(R.layout.toast,
+                        (ViewGroup) findViewById(R.id.toast_layout_root));
+                toast.setView(layout);
+                toast.setDuration(Toast.LENGTH_SHORT);
+
+                toast.show();
+
                 Log.d("civic-pothole-detection", "Pothole detected");
 
                 NotificationCompat.Builder mBuilder =
@@ -189,8 +201,6 @@ public class MainActivity extends Activity implements
     public boolean onOptionsItemSelected(MenuItem item) {
         // Handle item selection
         switch (item.getItemId()) {
-            case R.id.action_settings:
-                return true;
             case R.id.action_new:
                 Intent intent = new Intent(this, AddNewPotholeActivity.class);
                 startActivity(intent);

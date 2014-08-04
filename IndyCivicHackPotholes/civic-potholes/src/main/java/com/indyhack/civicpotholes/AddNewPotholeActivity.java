@@ -350,12 +350,14 @@ public class AddNewPotholeActivity extends Activity implements
 
     }
 
-    public void addPothole() {
+    public void addPothole(View v) {
         uploadPothole(new LatLng(mLocationClient.getLastLocation().getLatitude(), mLocationClient.getLastLocation().getLongitude()));
     }
 
     public void uploadPothole(LatLng latlng) {
         new AddPotholeTask(latlng.latitude, latlng.longitude).execute();
+
+        Toast.makeText(getApplicationContext(), "Pothole reported", Toast.LENGTH_LONG).show();
         finish();
     }
 
@@ -376,8 +378,6 @@ public class AddNewPotholeActivity extends Activity implements
                     return true;
                 }
                 return false;
-            case R.id.action_settings:
-                return true;
             default:
                 return super.onOptionsItemSelected(item);
         }
